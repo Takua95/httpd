@@ -21,13 +21,13 @@ namespace http
             int m_port;
             int m_socket;
             int m_new_socket;
-            long m_incomingMessage
+            long m_incomingMessage;
             struct sockaddr_in m_socketAddress;
             struct in_addr;
             unsigned int m_socketAddress_len;
             std::string m_serverMessage;
 
-            int startServer()
+            int startServer();
             void closeServer();
             void acceptConnection(int &new_socket);
             std::string buildResponse();

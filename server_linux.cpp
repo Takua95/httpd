@@ -1,4 +1,4 @@
-#include <httpc_tcpServer_lnux.h>
+#include "http_tcpServer_linux.h"
 
 int main()
 {
@@ -7,5 +7,5 @@ int main()
     TcpServer server = TcpServer("0.0.0.0", 8080);
     server.startListen();
 
-    retrun 0;
+    return 0;
 }

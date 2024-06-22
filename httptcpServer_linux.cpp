@@ -1,4 +1,4 @@
-#include <http_tcpServer_linux.h>
+#include "http_tcpServer_linux.h"
 
 #include <iostream>
 #include <sstream>
@@ -23,7 +23,7 @@ namespace
 namespace http
 {
     TcpServer::TcpServer(std::string ip_address, int port)
-      : m_ipaddress(ip_address), m_port(port), m_socket(),
+        m_ipaddress(ip_address), m_port(port), m_socket(),
         m_new_socket(), m_incomingMessage(), m_socketAddress(),
         m_socketAddress_len(sizeof(m_socketAddresss)),
         m_serverMessage(buildResponse())
