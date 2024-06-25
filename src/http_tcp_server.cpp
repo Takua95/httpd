@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <unistd.h>
-
+#define LOG_HTTP_REQUEST      0
 namespace
 {
     const int BUFFER_SIZE = 30720;
@@ -90,14 +90,26 @@ namespace http
 
             char buffer[BUFFER_SIZE] = {0};
             bytesReceived = read(m_new_socket, buffer, BUFFER_SIZE);
+            ss.str(""); // clearing out string
+            ss << "received " << bytesReceived <<" bytes.\n";
+            log(ss.str());
             if (bytesReceived < 0)
             {
                 exitWithError("Failed to read bytes from client socket connection");
             }
-
-            std::ostringstream ss;
-            ss << "------ Received Request from client ------\n\n";
-            log(ss.str());
+        
+            log("------ Received Request from client ------\n");
+            #if LOG_HTTP_REQUEST == 1
+                ss.str("");
+                for (int i = 0; i < BUFFER_SIZE; i++) {
+                    if (buffer[i] == '\0') {
+                        ss << std::ends; // ensure null terminator at the end in case we use string for C functions
+                        break;
+                    }
+                    ss << buffer[i];
+                }
+                log(ss.str());
+            #endif
 
             sendResponse();
 
