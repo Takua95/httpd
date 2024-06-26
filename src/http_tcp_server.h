@@ -25,13 +25,16 @@ namespace http
             struct sockaddr_in m_socketAddress;
             struct in_addr;
             unsigned int m_socketAddress_len;
-            std::string m_serverMessage;
 
             int startServer();
             void closeServer();
             void acceptConnection(int &new_socket);
-            std::string buildResponse();
-            void sendResponse();
+            std::string buildHomepageResponse();
+            std::string build404Response();
+            void sendResponse(std::string);
+            void handleRequest(std::string request);
+            void handleGetMethod(std::string uri);
+
     };
 }
 
