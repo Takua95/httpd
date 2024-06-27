@@ -18,6 +18,70 @@ namespace
         log("ERROR: " + errorMessage);
         exit(1);
     }
+
+    /**
+     * Locates the last occurence of a period within the full file name.  Returns the file extension including the period.
+     * 
+     * @param file_name pointer to the full file name to proccess.
+     * @return pointer of the file extension.
+     */
+    const char *get_file_extension(const char *file_name)
+    {
+        const char *dot = strrchr(file_name, '.');
+        if (!dot || dot == file_name)
+        {
+            return "";
+        }
+        return dot + 1;
+    }
+
+    /**
+     * Case insentitive comparision of two strings.  Returns true if they are equal, otherwise returns false.
+     * 
+     * @param s1 first string to compare.
+     * @param s2 second string to compare.
+     * @return boolean for whether the strings are equal.
+     */
+    bool case_insensitive_compare(const char *s1, const char *s2) {
+        while (*s1 && *s2) {
+            if (tolower((unsigned char)*s1) != tolower((unsigned char)*s2)) {
+                return false;
+            }
+            s1++;
+            s2++;
+        }
+        return *s1 == *s2;
+    }
+
+    /**
+     * Opens the current directory and returns the file if found.  If not found, returns 404.
+     * 
+     * @param file_name
+     * @return the file name.
+     */
+    char *get_file_case_insensitive(const char *file_name) 
+    {
+        DIR *dir = opendir(".");
+        if (dir == NULL) 
+        {
+            perror("opendir");
+            return NULL;
+        }
+
+        struct dirent *entry;
+        char *found_file_name = NULL;
+        while ((entry = readdir(dir)) != NULL) 
+        {
+            if (case_insensitive_compare(entry->d_name, file_name)) 
+            {
+                found_file_name = entry->d_name;
+                break;
+            }
+        }
+
+        closedir(dir);
+        return found_file_name;
+    }
 }
 
 namespace http
