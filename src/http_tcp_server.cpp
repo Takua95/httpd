@@ -25,7 +25,8 @@ namespace http
 {
     TcpServer::TcpServer(std::string ip_address, int port)
       : m_ip_address(ip_address), m_port(port), m_socket(),
-        m_new_socket(), m_incomingMessage(), m_socketAddress()
+        m_new_socket(), m_incomingMessage(), m_socketAddress(),
+        m_socketAddress_len(sizeof(m_socketAddress))
     {    
         m_socketAddress.sin_family = AF_INET;
         m_socketAddress.sin_port = htons(m_port);
@@ -99,7 +100,8 @@ namespace http
             ss << "------ Received Request from client ------\n\n";
             log(ss.str());
 
-            sendResponse();
+            std::string request_string(buffer); //construct string from null-terminated C string.
+            handleRequest(request_string);
 
             close(m_new_socket);
         }
