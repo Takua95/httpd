@@ -4,6 +4,7 @@
 #include <sstream>
 #include <fstream>
 #include <unistd.h>
+#include <cstring>
 
 namespace
 {
@@ -38,6 +39,20 @@ namespace http
             ss << "Failed to start server with PORT: " << ntohs(m_socketAddress.sin_port);
             log(ss.str());
         }
+        //find the path of the executable.  Only works in *nix systems with /proc.
+        int count = readlink("/proc/self/exe", m_exe_path, PATH_MAX);
+        if (count == - 1) {
+            perror("readlink");
+            exit(EXIT_FAILURE);
+            //maybe in future try another method
+        }
+        m_exe_path[count] = '\0';
+        //find the last occurence of '/' and replace with '\0'; this discards the executable name from the path.
+        char *last_slash = strrchr(m_exe_path, '/'); 
+        if (last_slash != NULL) {
+            *last_slash = '\0';
+        }
+        chdir(m_exe_path); // changd current working directory to path.
     }
 
     TcpServer::~TcpServer()

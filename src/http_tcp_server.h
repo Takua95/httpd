@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string>
+#include <limits.h>
 
 namespace http 
 {
@@ -21,6 +22,7 @@ namespace http
             int m_port;
             int m_socket;
             int m_new_socket;
+            char m_exe_path[PATH_MAX];
             long m_incomingMessage;
             struct sockaddr_in m_socketAddress;
             struct in_addr;

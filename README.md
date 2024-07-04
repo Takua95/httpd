@@ -4,4 +4,10 @@ Hypertext Transfer Protocol Daemon
 Run make, which creates the build directory, which will contain the server binary.
 
 # running server
-You must change your working directory to build/ before running the server binary, because it assumes that HTML content is in ../demo_content.
+Server assumes that HTML content is in ../demo_content (relative to the server binary location).
+
+It's possible to run:
+```
+make && build/server
+```
+to make and run the server in one go. 
