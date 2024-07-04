@@ -29,11 +29,14 @@ namespace http
             int startServer();
             void closeServer();
             void acceptConnection(int &new_socket);
-            std::string buildHomepageResponse();
+            std::string buildHomepageResponse(bool include_content);
             std::string build404Response();
+            std::string build405Response();
             void sendResponse(std::string);
             void handleRequest(std::string request);
             void handleGetMethod(std::string uri);
+            void handleHeadMethod(std::string uri);
+
 
     };
 }

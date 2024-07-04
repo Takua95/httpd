@@ -112,27 +112,38 @@ namespace http
         std::ostringstream ss;
         ss << "parsed method: " << method << std::endl;
         log(ss.str());
+        int uri_index = request.find(" ", method_index+1); // grab the string after method up till the next space.
+        std::string uri = request.substr(method_index+1, uri_index-(method_index+1));
+        ss.str("");
+        ss << "parsed URI: '" << uri <<"'"<< std::endl;
+        log(ss.str());        
         if (method == "GET") { //NOTE: C++ strings implement == operator, can't do in C!
-            int uri_index = request.find(" ", method_index+1); // grab the string after method up till the next space.
-            std::string uri = request.substr(method_index+1, uri_index-(method_index+1));
-            ss.str("");
-            ss << "parsed URI: '" << uri <<"'"<< std::endl;
-            log(ss.str());
             handleGetMethod(uri);
         }
-        else {
-            //return 405 at some point
+        else if (method == "HEAD") { //NOTE: C++ strings implement == operator, can't do in C!
+            handleHeadMethod(uri);
+        }
+        else { //501 may be more appropriate here, but this is temporary code.
+            sendResponse(build405Response()); //Method Not Allowed.
         }
     }
     void TcpServer::handleGetMethod(std::string uri) {
             if (uri == "/index.html" || uri == "/") {
-                sendResponse(buildHomepageResponse());
+                sendResponse(buildHomepageResponse(true));
+            }
+            else {
+                sendResponse(build404Response());
+            }
+    }
+    void TcpServer::handleHeadMethod(std::string uri) {
+            if (uri == "/index.html" || uri == "/") {
+                sendResponse(buildHomepageResponse(false));
             }
             else {
                 sendResponse(build404Response());
             }
 
-    }
+    }    
     void TcpServer::acceptConnection(int &new_socket) {
         new_socket = accept(m_socket, (sockaddr *)&m_socketAddress, &m_socketAddress_len);
         if (new_socket < 0)
@@ -142,13 +153,15 @@ namespace http
             exitWithError(ss.str());
         }
     }
-    std::string TcpServer::buildHomepageResponse() {
+    std::string TcpServer::buildHomepageResponse(bool include_content) {
         std::ifstream html_file("../demo_content/index.html");
         std::string html_string((std::istreambuf_iterator<char>(html_file)), std::istreambuf_iterator<char>());
         std::ostringstream ss;
         ss << "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: " <<html_string.size() << "\n\n" << html_string;
         std::string response(ss.str());
-        response.append(html_string);
+        if (include_content == true) {
+            response.append(html_string);
+        }
         return response;
     }
     std::string TcpServer::build404Response() {
@@ -159,7 +172,16 @@ namespace http
         std::string response(ss.str());
         response.append(html_string);
         return response;
-    }    
+    }
+    std::string TcpServer::build405Response() {
+        std::ifstream html_file("../demo_content/405-page.html");
+        std::string html_string((std::istreambuf_iterator<char>(html_file)), std::istreambuf_iterator<char>());
+        std::ostringstream ss;
+        ss << "HTTP/1.1 405 Method Not Allowed\nAllow: GET, HEAD "<< "\n\n" << html_string;
+        std::string response(ss.str());
+        response.append(html_string);
+        return response;
+    } 
     void TcpServer::sendResponse(std::string response) {
         long bytesSent;
         bytesSent = write(m_new_socket, response.c_str(), response.size());
