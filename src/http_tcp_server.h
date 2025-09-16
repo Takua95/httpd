@@ -38,8 +38,6 @@ namespace http
             void handleRequest(std::string request);
             void handleGetMethod(std::string uri);
             void handleHeadMethod(std::string uri);
-
-
     };
 }
 

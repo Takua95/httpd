@@ -1,5 +1,6 @@
 # httpd
 Hypertext Transfer Protocol Daemon
+
 # building
 Run make, which creates the build directory, which will contain the server binary.
 

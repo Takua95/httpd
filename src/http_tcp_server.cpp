@@ -109,7 +109,6 @@ namespace http
             {
                 exitWithError("Failed to read bytes from client socket connection");
             }
-        
 
             std::ostringstream ss;
             ss << "------ Received Request from client ------\n\n";
