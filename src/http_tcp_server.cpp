@@ -2,7 +2,9 @@
 
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <unistd.h>
+#include <cstring>
 
 namespace
 {
@@ -25,8 +27,7 @@ namespace http
     TcpServer::TcpServer(std::string ip_address, int port)
       : m_ip_address(ip_address), m_port(port), m_socket(),
         m_new_socket(), m_incomingMessage(), m_socketAddress(),
-        m_socketAddress_len(sizeof(m_socketAddress)),
-        m_serverMessage(buildResponse())
+        m_socketAddress_len(sizeof(m_socketAddress))
     {    
         m_socketAddress.sin_family = AF_INET;
         m_socketAddress.sin_port = htons(m_port);
@@ -38,6 +39,20 @@ namespace http
             ss << "Failed to start server with PORT: " << ntohs(m_socketAddress.sin_port);
             log(ss.str());
         }
+        //find the path of the executable.  Only works in *nix systems with /proc.
+        int count = readlink("/proc/self/exe", m_exe_path, PATH_MAX);
+        if (count == - 1) {
+            perror("readlink");
+            exit(EXIT_FAILURE);
+            //maybe in future try another method
+        }
+        m_exe_path[count] = '\0';
+        //find the last occurence of '/' and replace with '\0'; this discards the executable name from the path.
+        char *last_slash = strrchr(m_exe_path, '/'); 
+        if (last_slash != NULL) {
+            *last_slash = '\0';
+        }
+        chdir(m_exe_path); // changd current working directory to path.
     }
 
     TcpServer::~TcpServer()
@@ -99,14 +114,51 @@ namespace http
             ss << "------ Received Request from client ------\n\n";
             log(ss.str());
 
-            sendResponse();
+            std::string request_string(buffer); //construct string from null-terminated C string.
+            handleRequest(request_string);
 
             close(m_new_socket);
         }
     }
+    void TcpServer::handleRequest(std::string request) {
+        int method_index = request.find(" ");
+        std::string method = request.substr(0, method_index);
+        std::ostringstream ss;
+        ss << "parsed method: " << method << std::endl;
+        log(ss.str());
+        int uri_index = request.find(" ", method_index+1); // grab the string after method up till the next space.
+        std::string uri = request.substr(method_index+1, uri_index-(method_index+1));
+        ss.str("");
+        ss << "parsed URI: '" << uri <<"'"<< std::endl;
+        log(ss.str());        
+        if (method == "GET") { //NOTE: C++ strings implement == operator, can't do in C!
+            handleGetMethod(uri);
+        }
+        else if (method == "HEAD") { //NOTE: C++ strings implement == operator, can't do in C!
+            handleHeadMethod(uri);
+        }
+        else { //501 may be more appropriate here, but this is temporary code.
+            sendResponse(build405Response()); //Method Not Allowed.
+        }
+    }
+    void TcpServer::handleGetMethod(std::string uri) {
+            if (uri == "/index.html" || uri == "/") {
+                sendResponse(buildHomepageResponse(true));
+            }
+            else {
+                sendResponse(build404Response());
+            }
+    }
+    void TcpServer::handleHeadMethod(std::string uri) {
+            if (uri == "/index.html" || uri == "/") {
+                sendResponse(buildHomepageResponse(false));
+            }
+            else {
+                sendResponse(build404Response());
+            }
 
-    void TcpServer::acceptConnection(int &new_socket)
-    {
+    }    
+    void TcpServer::acceptConnection(int &new_socket) {
         new_socket = accept(m_socket, (sockaddr *)&m_socketAddress, &m_socketAddress_len);
         if (new_socket < 0)
         {
@@ -115,29 +167,42 @@ namespace http
             exitWithError(ss.str());
         }
     }
-
-    std::string TcpServer::buildResponse()
-    {
-        std::string htmlFile = "<!DOCTYPE html><html lang=\"en\"><body><h1> HOME </h1><p> Hello from your Server :) </p></body></html>";
+    std::string TcpServer::buildHomepageResponse(bool include_content) {
+        std::ifstream html_file("../demo_content/index.html");
+        std::string html_string((std::istreambuf_iterator<char>(html_file)), std::istreambuf_iterator<char>());
         std::ostringstream ss;
-        ss << "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: " << htmlFile.size() << "\n\n"
-           << htmlFile;
-
-        return ss.str();
+        ss << "HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: " <<html_string.size() << "\n\n" << html_string;
+        std::string response(ss.str());
+        if (include_content == true) {
+            response.append(html_string);
+        }
+        return response;
     }
-
-    void TcpServer::sendResponse()
-    {
+    std::string TcpServer::build404Response() {
+        std::ifstream html_file("../demo_content/404-page.html");
+        std::string html_string((std::istreambuf_iterator<char>(html_file)), std::istreambuf_iterator<char>());
+        std::ostringstream ss;
+        ss << "HTTP/1.1 404 Not Found\nContent-Type: text/html\nContent-Length: " <<html_string.size() << "\n\n" << html_string;
+        std::string response(ss.str());
+        response.append(html_string);
+        return response;
+    }
+    std::string TcpServer::build405Response() {
+        std::ifstream html_file("../demo_content/405-page.html");
+        std::string html_string((std::istreambuf_iterator<char>(html_file)), std::istreambuf_iterator<char>());
+        std::ostringstream ss;
+        ss << "HTTP/1.1 405 Method Not Allowed\nAllow: GET, HEAD "<< "\n\n" << html_string;
+        std::string response(ss.str());
+        response.append(html_string);
+        return response;
+    } 
+    void TcpServer::sendResponse(std::string response) {
         long bytesSent;
-
-        bytesSent = write(m_new_socket, m_serverMessage.c_str(), m_serverMessage.size());
-
-        if (bytesSent == m_serverMessage.size())
-        {
+        bytesSent = write(m_new_socket, response.c_str(), response.size());
+        if (bytesSent == response.size()) {
             log("------ Server Response sent to client ------\n\n");
         }
-        else
-        {
+        else {
             log("Error sending response to client");
         }
     }
